@@ -21,24 +21,26 @@ class MajorSystem final
 public:
   template<typename Rng>
   MajorSystem(size_t size, Rng& rng)
-    : particles_(size * 6)
+    : particles_(size)
     , velocity_(size, glm::vec3(0, 0, 0))
   {
     std::uniform_real_distribution<float> pos_dist(-1.0, 1.0);
-    std::uniform_real_distribution<float> col_dist(0.5, 1.0);
+
+    std::uniform_int_distribution<unsigned char> col_dist(127, 255);
 
     for (size_t i = 0; i < size; i++) {
-      particles_[(i * 6) + 0] = pos_dist(rng);
-      particles_[(i * 6) + 1] = pos_dist(rng);
-      particles_[(i * 6) + 2] = pos_dist(rng);
+      particles_[i].x = pos_dist(rng);
+      particles_[i].y = pos_dist(rng);
+      particles_[i].z = pos_dist(rng);
 
-      particles_[(i * 6) + 3] = col_dist(rng);
-      particles_[(i * 6) + 4] = col_dist(rng);
-      particles_[(i * 6) + 5] = 0;
+      particles_[i].r = col_dist(rng);
+      particles_[i].g = col_dist(rng);
+      particles_[i].b = 0;
+      particles_[i].a = 255;
     }
   }
 
-  const float* data() const { return particles_.data(); }
+  const dataviz_vertex_z* data() const { return particles_.data(); }
 
   size_t size() const { return particles_.size() / 6; }
 
@@ -46,15 +48,15 @@ public:
   {
     const std::size_t particle_count = size();
 
-    std::vector<float> next_particles(particle_count * 6);
+    std::vector<dataviz_vertex_z> next_particles(particle_count);
 
     std::vector<glm::vec3> next_velocity(particle_count);
 
     for (size_t i = 0; i < particle_count; i++) {
 
-      const auto* a = particles_.data() + (i * 6);
+      const auto* a = particles_.data() + i;
 
-      const auto a_pos = glm::vec3(a[0], a[1], a[2]);
+      const auto a_pos = glm::vec3(a->x, a->y, a->z);
 
       glm::vec3 force(0, 0, 0);
 
@@ -63,9 +65,9 @@ public:
         if (i == j)
           continue;
 
-        const auto* b = particles_.data() + (j * 6);
+        const auto* b = particles_.data() + j;
 
-        const auto b_pos = glm::vec3(b[0], b[1], b[2]);
+        const auto b_pos = glm::vec3(b->x, b->y, b->z);
 
         const auto delta = b_pos - a_pos;
 
@@ -87,13 +89,14 @@ public:
 
       next_velocity[i] = velocity_[i] + (accel * time_delta);
 
-      next_particles[(i * 6) + 0] = particles_[(i * 6) + 0] + delta_p.x;
-      next_particles[(i * 6) + 1] = particles_[(i * 6) + 1] + delta_p.y;
-      next_particles[(i * 6) + 2] = particles_[(i * 6) + 2] + delta_p.z;
+      next_particles[i].x = particles_[i].x + delta_p.x;
+      next_particles[i].y = particles_[i].y + delta_p.y;
+      next_particles[i].z = particles_[i].z + delta_p.z;
 
-      next_particles[(i * 6) + 3] = particles_[(i * 6) + 3];
-      next_particles[(i * 6) + 4] = particles_[(i * 6) + 4];
-      next_particles[(i * 6) + 5] = particles_[(i * 6) + 5];
+      next_particles[i].r = particles_[i].r;
+      next_particles[i].g = particles_[i].g;
+      next_particles[i].b = particles_[i].b;
+      next_particles[i].a = particles_[i].a;
     }
 
     particles_ = std::move(next_particles);
@@ -102,10 +105,16 @@ public:
   }
 
 private:
-  std::vector<float> particles_;
+  std::vector<dataviz_vertex_z> particles_;
 
   std::vector<glm::vec3> velocity_;
 };
+
+void
+log_callback(void* /* user_data */, const char* msg, unsigned int /* msg_size */)
+{
+  std::cerr << msg << std::endl;
+}
 
 } // namespace
 
@@ -117,6 +126,8 @@ int
 main()
 #endif
 {
+  datviz_global_init();
+
   std::mt19937 rng(1234);
 
   const std::uint32_t point_count = 2000;
@@ -124,6 +135,8 @@ main()
   MajorSystem major_system(point_count, rng);
 
   datviz_z* viewer = datviz_create();
+
+  datviz_add_logger(viewer, nullptr, log_callback);
 
   datviz_set_window_title(viewer, "Example Point Cloud");
 
@@ -148,6 +161,8 @@ main()
   }
 
   datviz_destroy(viewer);
+
+  datviz_global_cleanup();
 
   return 0;
 }

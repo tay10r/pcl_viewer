@@ -6,7 +6,14 @@ project(point_cloud_viewer
   DESCRIPTION "A simple library for rendering point clouds interactively."
 )
 
-option(PCL_VIEWER_BUILD_DOCS "Whether or not to build the documentation." ON)
+option(DATAVIZ_BUILD_DOCS "Whether or not to build the documentation." OFF)
+option(DATVIZ_COMPILER_WARNINGS "Whether or not to compile with warnings." OFF)
+
+if(DATVIZ_COMPILER_WARNINGS)
+  if(CMAKE_COMPILER_IS_GNUCXX)
+    set(cxx_warnings -Wall -Wextra -Werror -Wfatal-errors)
+  endif(CMAKE_COMPILER_IS_GNUCXX)
+endif(DATVIZ_COMPILER_WARNINGS)
 
 ######################
 # Fetch Dependencies #
@@ -38,6 +45,8 @@ add_library(point_cloud_viewer
   datviz_khrplatform.h
 )
 
+target_compile_options(point_cloud_viewer PRIVATE ${cxx_warnings})
+
 target_compile_definitions(point_cloud_viewer PRIVATE GLFW_INCLUDE_NONE=1)
 
 target_link_libraries(point_cloud_viewer PUBLIC glfw glm ${OPENGL_LIBRARIES})
@@ -49,16 +58,16 @@ target_include_directories(point_cloud_viewer
 # Declare Test Program #
 ########################
 
-add_executable(point_cloud_viewer_test WIN32
-  point_cloud_viewer_test.cpp)
+add_executable(datviz_example WIN32
+  example/main.cpp)
 
-target_link_libraries(point_cloud_viewer_test PRIVATE point_cloud_viewer)
+target_link_libraries(datviz_example PRIVATE point_cloud_viewer)
 
 #############################
 # Declare Doxygen Generator #
 #############################
 
-if(PCL_VIEWER_BUILD_DOCS)
+if(DATAVIZ_BUILD_DOCS)
 
   find_package(Doxygen REQUIRED)
 
@@ -72,4 +81,4 @@ if(PCL_VIEWER_BUILD_DOCS)
 
   endif(Doxygen_FOUND)
 
-endif(PCL_VIEWER_BUILD_DOCS)
+endif(DATAVIZ_BUILD_DOCS)
