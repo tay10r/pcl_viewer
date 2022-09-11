@@ -1,4 +1,4 @@
-#include <point_cloud_viewer.h>
+#include <datviz.h>
 
 #include <glm/glm.hpp>
 
@@ -119,33 +119,35 @@ main()
 {
   std::mt19937 rng(1234);
 
-  const std::uint32_t point_count = 200;
+  const std::uint32_t point_count = 2000;
 
   MajorSystem major_system(point_count, rng);
 
-  pcl_viewer_z* viewer = pcl_viewer_create("Example Point Cloud");
+  datviz_z* viewer = datviz_create();
+
+  datviz_set_window_title(viewer, "Example Point Cloud");
+
   if (!viewer) {
     std::cerr << "Failed to create point cloud viewer window." << std::endl;
     return EXIT_FAILURE;
   }
 
-  pcl_viewer_set_perspective(viewer, glm::radians(45.0f), 0.01f, 10.0f);
+  datviz_set_perspective(viewer, glm::radians(45.0f), 0.01f, 10.0f);
 
-  while (!pcl_viewer_should_close(viewer)) {
+  while (!datviz_should_close(viewer)) {
 
-    pcl_viewer_begin_frame(viewer);
+    datviz_begin_frame(viewer);
 
-    pcl_viewer_render_points(viewer, major_system.data(), point_count);
+    datviz_render_points(viewer, major_system.data(), point_count);
 
-    pcl_viewer_end_frame(viewer);
+    datviz_end_frame(viewer);
 
-    pcl_viewer_poll_input(viewer);
+    datviz_poll_input(viewer);
 
-    for (int i = 0; i < 10; i++)
-      major_system.step(1e-1);
+    major_system.step(1);
   }
 
-  pcl_viewer_destroy(viewer);
+  datviz_destroy(viewer);
 
   return 0;
 }
